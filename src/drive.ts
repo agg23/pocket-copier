@@ -3,18 +3,20 @@ import { Drive, list as driveList } from "drivelist";
 // @ts-ignore
 import { eject } from "eject-media";
 
-export type ConnectedDrive =
-  | {
-      connected: true;
-      path: string;
-    }
+export interface ConnectedDriveStatus {
+  connected: true;
+  path: string;
+}
+
+export type DriveStatus =
+  | ConnectedDriveStatus
   | {
       connected: false;
     };
 
 export const detectDrive = (
   driveName: string,
-  callback: (drive: ConnectedDrive) => void
+  callback: (drive: DriveStatus) => void
 ) => {
   const checkInterval = 2;
 

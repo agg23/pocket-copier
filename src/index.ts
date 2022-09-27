@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { detectDrive, ejectDrive } from "./drive";
+import { detectDrive, ejectDrive, ConnectedDriveStatus } from "./drive";
 import chokidar from "chokidar";
 import { copyFile, existsSync, mkdirSync } from "fs";
 import path from "path";
@@ -31,6 +31,8 @@ const { drive, input, output } = program.opts() as {
 
 let updatedPaths = new Set<string>();
 
+let currentlyConnectedDrive: ConnectedDriveStatus | undefined = undefined;
+
 chokidar
   .watch(input, {
     ignoreInitial: true,
@@ -39,43 +41,54 @@ chokidar
     updatedPaths.add(updatedPath);
 
     console.log(eventName, updatedPaths);
+
+    if (!!currentlyConnectedDrive) {
+      copyFiles(currentlyConnectedDrive);
+    }
   });
+
+const copyFiles = (connectedDrive: ConnectedDriveStatus) => {
+  for (const updatedPath of updatedPaths) {
+    // Remove `input` from path
+    let pathDiff = updatedPath.slice(input.length);
+
+    if (pathDiff.length < 1) {
+      // No content left. Changed path must be the file that was watched
+      pathDiff = path.basename(updatedPath);
+    }
+
+    const destPath = path.join(connectedDrive.path, output, pathDiff);
+
+    const destFolder = path.dirname(destPath);
+
+    if (!existsSync(destFolder)) {
+      // Create missing directory
+      console.log(`Creating dir ${destFolder}`);
+      mkdirSync(destFolder, { recursive: true });
+    }
+
+    console.log(`Copying ${updatedPath} to ${destPath}`);
+    copyFile(updatedPath, destPath, (error) => {
+      if (error) {
+        console.error(error);
+      }
+    });
+  }
+
+  updatedPaths = new Set();
+
+  setTimeout(() => {
+    ejectDrive(connectedDrive.path);
+  }, 1000);
+};
 
 detectDrive(drive, (connectedDrive) => {
   console.log(connectedDrive.connected ? "Connected" : "Disconnected");
 
   if (connectedDrive.connected) {
-    for (const updatedPath of updatedPaths) {
-      // Remove `input` from path
-      let pathDiff = updatedPath.slice(input.length);
-
-      if (pathDiff.length < 1) {
-        // No content left. Changed path must be the file that was watched
-        pathDiff = path.basename(updatedPath);
-      }
-
-      const destPath = path.join(connectedDrive.path, output, pathDiff);
-
-      const destFolder = path.dirname(destPath);
-
-      if (!existsSync(destFolder)) {
-        // Create missing directory
-        console.log(`Creating dir ${destFolder}`);
-        mkdirSync(destFolder, { recursive: true });
-      }
-
-      console.log(`Copying ${updatedPath} to ${destPath}`);
-      copyFile(updatedPath, destPath, (error) => {
-        if (error) {
-          console.error(error);
-        }
-      });
-    }
-
-    updatedPaths = new Set();
-
-    setTimeout(() => {
-      ejectDrive(connectedDrive.path);
-    }, 1000);
+    currentlyConnectedDrive = connectedDrive;
+    copyFiles(connectedDrive);
+  } else {
+    currentlyConnectedDrive = undefined;
   }
 });
