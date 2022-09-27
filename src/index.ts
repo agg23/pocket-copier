@@ -75,11 +75,14 @@ const copyFiles = (connectedDrive: ConnectedDriveStatus) => {
     });
   }
 
-  updatedPaths = new Set();
+  if (updatedPaths.size > 0) {
+    // Only eject if some files were copied
+    setTimeout(() => {
+      ejectDrive(connectedDrive.path);
+    }, 1000);
+  }
 
-  setTimeout(() => {
-    ejectDrive(connectedDrive.path);
-  }, 1000);
+  updatedPaths = new Set();
 };
 
 detectDrive(drive, (connectedDrive) => {
