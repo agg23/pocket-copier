@@ -1,0 +1,22 @@
+{
+  "name": "pocket-copier",
+  "version": "0.1.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "node build/index.js",
+    "build": "tsc"
+  },
+  "author": "agg23",
+  "license": "MIT",
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "commander": "^9.4.0",
+    "drivelist": "^11.0.0",
+    "eject-media": "0.0.3",
+    "typescript": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^18.7.23"
+  }
+}
